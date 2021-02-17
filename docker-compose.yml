@@ -1,0 +1,12 @@
+version: '3.3'
+
+services:
+  oracle:
+    image: quay.io/maksymbilenko/oracle-12c
+    container_name: oracle
+    restart: unless-stopped
+    ports:
+      - 8089:8080
+      - 1521:1521
+    environment:
+      - DBCA_TOTAL_MEMORY=2048
