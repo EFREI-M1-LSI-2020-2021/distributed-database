@@ -180,13 +180,6 @@ SELECT NOTE, NOM, PRENOM FROM NOTATION
 INNER JOIN ETUDIANT E on E.NUMETU = NOTATION.NUMETU;
 ```
 
-Ou
-
-```sql
-SELECT NOM, PRENOM, NOTE FROM ETUDIANT
-INNER JOIN NOTATION ON ETUDIANT.NUMETU = NOTATION.NUMETU;
-```
-
 ### 7) Moyennes des notes de chaque étudiant (indiquer le nom et le prénom), classées de la meilleure à la moins bonne (les notes à NULL sont à considérer comme 0).
 
 ```sql
@@ -371,6 +364,7 @@ CREATE VIEW MOYLYONNAIS AS (
 Oui c’est possible car il est dans la view Moy_Lyonnais 
 
 ### 8) Donnez un droit d’accès en consultation à la vue EtudLyonnais à votre binôme (Un second compte que vous allez créer si nécessaire sous Oracle). Vérifier le contenu de la vue depuis les 2 comptes.
+
 On donne le privilege d’update à jm: GRANT UPDATE ON MoyLyonnais to jm; 
 On donne le privilege de select à jm:  GRANT SELECT ON MoyLyonnais to jm; 
 
