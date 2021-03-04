@@ -181,8 +181,7 @@ dispatchers='(PROTOCOL=TCP) (SERVICE=ORCLXDB)'
 open_cursors=300 
 remote_login_passwordfile='EXCLUSIVE'
 undo_tablespace='UNDOTBS1'
-# You may want to ensure that control files are created on separate physical
-# devices
+# You may want to ensure that control files are created on separate physical devices
 control_files = (ora_control1, ora_control2)
 compatible ='11.2.0'
 ```
@@ -246,6 +245,106 @@ Nous pouvons bien voir que T1 a bien été crée dans le tablespaces. Donc cela 
 
 ## 5. Caractéristiques tablespace
 
+
+* Afficher les caractéristiques physiques du tablespace dans lequel ont été créées les tables
+(paramètres de la clause storage et espace disponible). Il faut préciser dans la requête
+`ALLOCATION_TYPE = USER`
+
+```sql
+select DBA_TABLESPACES.TABLESPACE_NAME, SUM(BYTES) BYTES from DBA_TABLESPACES
+inner join DBA_FREE_SPACE on DBA_FREE_SPACE.TABLESPACE_NAME = DBA_TABLESPACES.TABLESPACE_NAME
+where ALLOCATION_TYPE=USER
+GROUP BY DBA_TABLESPACES.TABLESPACE_NAME;
+```
+
+![](images/specs_tablespace.png)
+
+Afficher les caractéristiques physiques des tables créées (initial extent, next_extent,min_extents, max_extents, pct_increase, pct_free, pct_used)
+
+```sql
+select INITIAL_EXTENT, NEXT_EXTENT, MIN_EXTENTS, MAX_EXTENTS, PCT_INCREASE from DBA_TABLES;
+```
+
+![](images/specs_tables.png)
+
+## 6.
+* A partir de la table DEPT, créer pour une table TEST contenant plusieurs milliers (7168 par
+exemple) d’enregistrements. Afficher les caractéristiques physiques de la table TEST.
+Utiliser le CREATE TABLE AS pour la création. Ensuite créer le bloc PL/SQL pour
+augmenter le nombre d’enregistrements de la table TEST à partir de la table DEPT;
+
+```sql
+create table TEST (
+    DEPTNO	integer,
+    DNAME	varchar2(20),
+    LOC		varchar2(30),
+    primary key (DEPTNO)
+);
+```
+
+Data insertion
+
+```sql
+BEGIN
+    for i in 1..6969 loop
+        INSERT INTO TEST(DEPTNO, DNAME, LOC) VALUES (i, 'TOTO', 'TEUTEU');
+    end loop;
+end;
+```
+
+```sql
+select INITIAL_EXTENT, NEXT_EXTENT, MIN_EXTENTS, PCT_INCREASE, PCT_USED, PCT_FREE from DBA_TABLES where TABLE_NAME = 'TEST';
+```
+
+![](images/physical_specs_test.png)
+
+## 7.
+* Afficher le nombre d'extents de tous les segments de votre compte. (nom du segment, type,nombre d'extents, taille en bytes). (dba_segments).
+
+```sql
+SELECT DBA_EXTENTS.SEGMENT_NAME, DBA_EXTENTS.SEGMENT_TYPE, DBA_SEGMENTS.EXTENTS, DBA_EXTENTS.BYTES FROM DBA_EXTENTS
+inner join DBA_SEGMENTS on DBA_EXTENTS.SEGMENT_NAME = DBA_SEGMENTS.SEGMENT_NAME
+where DBA_SEGMENTS.OWNER = USER;
+```
+
+![](images/number_extents_account.png)
+
+## 8.
+Afficher la taille de chaque extent de la table TEST. (Le segment TEST dans dba_extents). Il
+faut vérifier que les informations affichées concernent bien votre table TEST et pas toutes les
+tables TEST de la base "orcl".
+
+```sql
+SELECT DBA_EXTENTS.SEGMENT_NAME, DBA_EXTENTS.BYTES, DBA_EXTENTS.OWNER FROM DBA_EXTENTS
+inner join DBA_SEGMENTS on DBA_EXTENTS.SEGMENT_NAME = DBA_SEGMENTS.SEGMENT_NAME
+where DBA_SEGMENTS.SEGMENT_NAME = 'TEST'
+and DBA_EXTENTS.TABLESPACE_NAME = 'USERS';
+```
+
+![](images/size_extents_test.png)
+
+## 9.
+Modifier les paramètres physiques de la table TEST de manière que son prochain extend ait
+une taille de 200K et un pctincrease de 0.
+
+```sql
+ALTER TABLE TEST MOVE TABLESPACE USERS STORAGE(next 200k pctincrease 0);
+```
+
+![](images/modify_physical_parameters.png)
+
+## 10.
+Afficher les valeurs de paramètres fournissant le nombre d'enregistrements (num_row), le
+nombre de blocs occupés (blocks), le nombre de blocs vides (empty_blocks), pct_free,
+pct_used de la table test à partir de la vue dba_tables.
+
+```sql
+select NUM_ROWS, BLOCKS, PCT_FREE, PCT_USED from DBA_TABLES where TABLE_NAME = 'TEST';
+```
+
+Appliquer la composante ANALYZE à la table TEST de manière à calculer lescaractéristiques physiques de cette table ;
+Utiliser la commande : `analyze table test compute statistics`;
+
 ```sql
 SELECT num_rows, blocks, empty_blocks, avg_space, avg_row_len
 FROM user_tables
@@ -268,4 +367,22 @@ ANALYZE TABLE test ESTIMATE STATISTICS;
 SELECT num_rows, blocks, empty_blocks, avg_space, avg_row_len
 FROM user_tables
 WHERE table_name ='TEST';
+```
+
+Modifier le pctfree et le pctused (par exemple 1 et 80 respectivement).
+
+```sql
+ALTER TABLE TEST PCTFREE 1;
+ALTER TABLE TEST PCTUSED 80;
+```
+
+Augmenter la taille de la table test en utilisant le bloc PLSQL de la question 6. 
+Revérifier les caractéristiques de stockage de la table test (n’oublier pas de réappliquer la composante ANALYZE).
+
+```sql
+BEGIN
+    for i in 1..6969 loop
+        INSERT INTO TEST(DEPTNO, DNAME, LOC) VALUES (i, 'AL', '<3 you');
+    end loop;
+end;
 ```
