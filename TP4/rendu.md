@@ -292,10 +292,6 @@ BEGIN
 end;
 ```
 
-```sql
-select INITIAL_EXTENT, NEXT_EXTENT, MIN_EXTENTS, PCT_INCREASE, PCT_USED, PCT_FREE from DBA_TABLES where TABLE_NAME = 'TEST';
-```
-
 ![](images/physical_specs_test.png)
 
 ## 7.
@@ -346,28 +342,19 @@ Appliquer la composante ANALYZE à la table TEST de manière à calculer lescara
 Utiliser la commande : `analyze table test compute statistics`;
 
 ```sql
-SELECT num_rows, blocks, empty_blocks, avg_space, avg_row_len
-FROM user_tables
-WHERE table_name ='TEST';
-
-ANALYZE TABLE test COMPUTE STATISTICS;
-
-SELECT num_rows, blocks, empty_blocks, avg_space, avg_row_len
-FROM user_tables
-WHERE table_name ='TEST';
-
-ANALYZE TABLE test DELETE STATISTICS;
-
-SELECT num_rows, blocks, empty_blocks, avg_space, avg_row_len
-FROM user_tables
-WHERE table_name ='TEST';
-
-ANALYZE TABLE test ESTIMATE STATISTICS;
-
-SELECT num_rows, blocks, empty_blocks, avg_space, avg_row_len
-FROM user_tables
-WHERE table_name ='TEST';
+SELECT NUM_ROWS, BLOCKS, EMPTY_BLOCKS, AVG_SPACE, AVG_ROW_LEN
+FROM USER_TABLES
+WHERE TABLE_NAME ='TEST';
 ```
+
+![](images/analyze_init.png)
+
+
+```sql
+ANALYZE TABLE TEST COMPUTE STATISTICS;
+```
+
+![](images/analyze_first.png)
 
 Modifier le pctfree et le pctused (par exemple 1 et 80 respectivement).
 
@@ -378,11 +365,18 @@ ALTER TABLE TEST PCTUSED 80;
 
 Augmenter la taille de la table test en utilisant le bloc PLSQL de la question 6. 
 Revérifier les caractéristiques de stockage de la table test (n’oublier pas de réappliquer la composante ANALYZE).
-
 ```sql
 BEGIN
     for i in 1..6969 loop
-        INSERT INTO TEST(DEPTNO, DNAME, LOC) VALUES (i, 'AL', '<3 you');
+        INSERT INTO TEST(DEPTNO, DNAME, LOC) VALUES (i+6969, 'TOTO', 'TEUTEU');
     end loop;
 end;
+
+ANALYZE TABLE TEST COMPUTE STATISTICS;
+
+SELECT NUM_ROWS, BLOCKS, EMPTY_BLOCKS, AVG_SPACE, AVG_ROW_LEN
+FROM USER_TABLES
+WHERE TABLE_NAME ='TEST';
 ```
+
+![](images/analyze_second.png)
